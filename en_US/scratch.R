@@ -4,23 +4,30 @@ require(tm)
 
 set.seed(123124)
 
-blogs.lines <- 899288
-con1 <- file("en_US.blogs.txt", 'r')
-con2 <- file("blogs.txt", "w")
-
-blogs <- readLines(con1, 1)
-for (i in 2:blogs.lines) {
+create_sample <- function (input_file, output_file, lines) {
+  con1 <- file(input_file, 'r')
+  con2 <- file(output_file, "w")
+  sample <- readLines(con1, 1)
+  for (i in 2:lines) {
     if (rbinom(1,1,0.2)) {
-        blogs <- c(blogs,readLines(con1,1))
+      sample <- c(sample,readLines(con1,1))
     }
     else {
-        gbg <- readLines(con1, 1)
+      gbg <- readLines(con1, 1)
     }
+  }
+  close(con1)
+  
+  writeLines(sample,con2)
+  close(con2)    
+  sample
 }
-close(con1)
 
-writeLines(blogs,con2)
-close(con2)
+blogs <- create_sample("en_US.blogs.txt", "sample/blogs.txt", 899288)
+news <- create_sample("en_US.news.txt", "sample/news.txt", 77259)
+tweets <- create_sample("en_US.twitter.txt", "sample/twitter.txt",2360148)
+
+en.cor <- VCorpus(DirSource("sample/"))
 
 blog.cor <- VCorpus(VectorSource(blogs))
 blog.cor <- tm_map(blog.cor, stripWhitespace)
