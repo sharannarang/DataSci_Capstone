@@ -19,31 +19,12 @@ require(tm)
 
 set.seed(123124)
 ## Create the sample
-
-create_sample <- function (input_file, output_file, lines) {
-  con1 <- file(input_file, 'r')
-  con2 <- file(output_file, "w")
-  sample <- readLines(con1, 1)
-  for (i in 2:lines) {
-    if (rbinom(1,1,0.2)) {
-      sample <- c(sample,readLines(con=con1,n=1, encoding="UTF-8"))
-    }
-    else {
-      gbg <- readLines(con1, 1)
-    }
-  }
-  close(con1)
-  
-  writeLines(sample,con2)
-  close(con2)    
-  sample
-}
-
-create_sample_2 <- function(src, out, lines) {
-text <- readLines(src, lines)
-sub<- rbinom(lines, 1, 0.2)
-out.txt <- text[sub==1]
-writeLines(out.txt, out)
+create_sample <- function(src, out, lines) {
+    text <- readLines(src, lines)
+    sub<- rbinom(lines, 1, 0.2)
+    out.txt <- text[sub==1]
+    writeLines(out.txt, out)
+    out.txt
 }
 
 
@@ -66,11 +47,13 @@ en.cor <- tm_map(en.cor, PlainTextDocument)
 ## Tokenization
 TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
 BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+QuadgramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 4, max = 4))
 
 ## Create 1,2,3 gram tokens
 dtm_uni <- DocumentTermMatrix(en.cor)
 dtm_bi <- DocumentTermMatrix(en.cor, control = list(tokenize= BigramTokenizer))
 dtm_tri <- DocumentTermMatrix(en.cor, control = list(tokenize= TrigramTokenizer))
+dtm_quad <- DocumentTermMatrix(en.cor, control = list(tokenize= QuadgramTokenizer))
 
 ## Generate Frequencies
 freq_uni <- colSums(as.matrix(dtm_uni))
