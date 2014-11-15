@@ -1,7 +1,22 @@
-## Capstone scratch script
+---
+title: "Exploratory analysis for text prediction using NLP"
+output: html_document
+---
+## Introduction
 
-## Exploratory Analysis
+The Capstone Project involves using existing dataset to build text models and predict the next word in a given sentance. As a part of the capstone, the first step inolves exploring the dataset and getting familiar with textual data. 
 
+## Exploratory Analysis.
+
+In order to explore the dataset, we start by reading in the data and constructing simple barplots. The barplots also d
+
+```{r load required libraries, echo=FALSE, message=FALSE, warning=FALSE}
+library(tm)
+library(RWeka)
+library(ggplot2)
+```
+
+```{r exploratory analysis, echo=TRUE, warning=FALSE}
 chars.blogs <- nchar(readLines("en_US.blogs.txt", encoding = 'UTF-8'))
 chars.twitter <- nchar(readLines("en_US.twitter.txt", encoding = 'UTF-8'))
 chars.news <- nchar(readLines("en_US.news.txt", encoding = 'UTF-8'))
@@ -13,13 +28,11 @@ boxplot(chars.news, col="blue", log="y")
 title(main="News", ylab="Log scale of length of entries")
 boxplot(chars.twitter, col="red")
 title(main="Tweets", ylab="Length of entries")
+```
 
-require(tm)
+## Random Sampling
 
-
-set.seed(123124)
-## Create the sample
-
+```{r sample funciton, echo=TRUE, eval=FALSE}
 create_sample <- function (input_file, output_file, lines) {
   con1 <- file(input_file, 'r')
   con2 <- file(output_file, "w")
@@ -39,40 +52,32 @@ create_sample <- function (input_file, output_file, lines) {
   sample
 }
 
-create_sample_2 <- function(src, out, lines) {
-text <- readLines(src, lines)
-sub<- rbinom(lines, 1, 0.2)
-out.txt <- text[sub==1]
-writeLines(out.txt, out)
-}
-
-
 ## Pick random texts from the files
 blogs <- create_sample("en_US.blogs.txt", "sample/blogs.txt", 899288)
 news <- create_sample("en_US.news.txt", "sample/news.txt", 77259)
 tweets <- create_sample("en_US.twitter.txt", "sample/twitter.txt",2360148)
+```
 
+
+## Developing the Corpus
+
+```{r create corpus, echo=TRUE, cache=TRUE}
 ## Create the corpus
 en.cor <- VCorpus(DirSource("sample/"))
+```
 
-## Perform the preprocessing
+```{r clean the corpus, echo=TRUE, cache=TRUE}
 en.cor<- tm_map(en.cor, tolower)
 en.cor<- tm_map(en.cor, removeNumbers)
 en.cor<- tm_map(en.cor, removePunctuation)
 en.cor <- tm_map(en.cor, removeWords, stopwords("english"))
 en.cor <- tm_map(en.cor, stripWhitespace)
 en.cor <- tm_map(en.cor, PlainTextDocument)
+```
 
 ## Tokenization
+
+```{r Tokenization, echo=TRUE, cache=TRUE, message=FALSE}
 TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
 BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
-
-## Create 1,2,3 gram tokens
-dtm_uni <- DocumentTermMatrix(en.cor)
-dtm_bi <- DocumentTermMatrix(en.cor, control = list(tokenize= BigramTokenizer))
-dtm_tri <- DocumentTermMatrix(en.cor, control = list(tokenize= TrigramTokenizer))
-
-## Generate Frequencies
-freq_uni <- colSums(as.matrix(dtm_uni))
-wc <- data.frame(word=names(freq_uni), freq=freq_uni)
-ggplot(data=head(wc[order(wc$freq, decreasing = T),], 20), aes(word,freq)) + geom_bar(stat="identity")
+```
