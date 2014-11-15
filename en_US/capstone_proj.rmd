@@ -8,7 +8,7 @@ The Capstone Project involves using existing dataset to build text models and pr
 
 ## Exploratory Analysis.
 
-In order to explore the dataset, we start by reading in the data and constructing simple barplots. The barplots also d
+In order to explore the dataset, we start by reading in the data and constructing simple barplots. The barplots depict the length of entries in each of the datasets. In order to represent the blogs and news datasets, y axis is log scaled. From the plots, it is evident that the blogs and news datasets have larger posts. Also, as expected, the max length of the twitter post is 140 charaters. 
 
 ```{r load required libraries, echo=FALSE, message=FALSE, warning=FALSE}
 library(tm)
@@ -16,10 +16,16 @@ library(RWeka)
 library(ggplot2)
 ```
 
+```{r read data, cache=TRUE}
+blogs <- readLines("en_US.blogs.txt", encoding = 'UTF-8')
+twitter <- readLines("en_US.twitter.txt", encoding = 'UTF-8')
+news <- readLines("en_US.news.txt", encoding = 'UTF-8')
+```
+
 ```{r exploratory analysis, echo=TRUE, warning=FALSE}
-chars.blogs <- nchar(readLines("en_US.blogs.txt", encoding = 'UTF-8'))
-chars.twitter <- nchar(readLines("en_US.twitter.txt", encoding = 'UTF-8'))
-chars.news <- nchar(readLines("en_US.news.txt", encoding = 'UTF-8'))
+chars.blogs <- nchar(blogs)
+chars.twitter <- nchar(twitter)
+chars.news <- nchar(news)
 
 par(mfrow = c(1,3))
 boxplot(chars.blogs, col="green", log="y")
@@ -28,6 +34,18 @@ boxplot(chars.news, col="blue", log="y")
 title(main="News", ylab="Log scale of length of entries")
 boxplot(chars.twitter, col="red")
 title(main="Tweets", ylab="Length of entries")
+```
+
+```{r unique words, eval=FALSE}
+blogs <- clean_up(blogs)
+blogs.words <- unique(unlist(strsplit(blogs, " ")))
+twitter <- clean_up(twitter)
+twitter.words <- unique(unlist(strsplit(twitter, " ")))
+news <- clean_up(blogs)
+news.words <- unique(unlist(strsplit(news, " ")))
+
+unique.words <- unique(c(blogs.words, twitter.words, news.words))
+
 ```
 
 ## Random Sampling
@@ -61,12 +79,12 @@ tweets <- create_sample("en_US.twitter.txt", "sample/twitter.txt",2360148)
 
 ## Developing the Corpus
 
-```{r create corpus, echo=TRUE, cache=TRUE}
+```{r create corpus, echo=TRUE, cache=TRUE, eval=FALSE}
 ## Create the corpus
-en.cor <- VCorpus(DirSource("sample/"))
+en.cor <- VCorpus(DirSource("clean_sample/"))
 ```
 
-```{r clean the corpus, echo=TRUE, cache=TRUE}
+```{r clean the corpus, echo=TRUE, cache=TRUE, eval=FALSE}
 en.cor<- tm_map(en.cor, tolower)
 en.cor<- tm_map(en.cor, removeNumbers)
 en.cor<- tm_map(en.cor, removePunctuation)
@@ -80,4 +98,9 @@ en.cor <- tm_map(en.cor, PlainTextDocument)
 ```{r Tokenization, echo=TRUE, cache=TRUE, message=FALSE}
 TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
 BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+```
+
+```{r load data, echo=FALSE}
+load(".RData")
+dtm_tri
 ```
