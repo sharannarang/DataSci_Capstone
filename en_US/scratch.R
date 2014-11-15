@@ -24,7 +24,7 @@ create_sample <- function (input_file, output_file, lines) {
 }
 
 blogs <- create_sample("en_US.blogs.txt", "sample/blogs.txt", 899288)
-news <- create_sample("en_US.news.txt", "sample/news.txt", 77259)
+news <- create_sample("en_US.news.txt", "sample/news.txt", 1010242)
 tweets <- create_sample("en_US.twitter.txt", "sample/twitter.txt",2360148)
 
 en.cor <- VCorpus(DirSource("sample/"))
