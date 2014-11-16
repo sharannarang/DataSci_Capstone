@@ -27,6 +27,18 @@ create_sample <- function(src, out, lines) {
     out.txt
 }
 
+## Cleaning function
+clean_up <- function(text) {
+    clean.text <- gsub("\u2092", "'", text)
+    clean.text <- gsub("\u2019", "'", clean.text)
+    clean.text <- removePunctuation(clean.text)
+    clean.text <- removeNumbers(clean.text)
+    clean.text <- removePunctuation(gsub("\032", "", clean.text))
+    clean.text <- gsub("\u0093|\u0092|\u0094", "", clean.text)
+    clean.text <- stripWhitespace(clean.text)
+    clean.text <- tolower(clean.text)
+    clean.text
+}
 
 ## Pick random texts from the files
 blogs <- create_sample("en_US.blogs.txt", "sample/blogs.txt", 899288)
@@ -59,3 +71,21 @@ dtm_quad <- DocumentTermMatrix(en.cor, control = list(tokenize= QuadgramTokenize
 freq_uni <- colSums(as.matrix(dtm_uni))
 wc <- data.frame(word=names(freq_uni), freq=freq_uni)
 ggplot(data=head(wc[order(wc$freq, decreasing = T),], 20), aes(word,freq)) + geom_bar(stat="identity")
+
+## Create Sparse Matrices
+dtm_uni_sp <- removeSparseTerms(dtm_uni,0.2)
+dtm_bi_sp <- removeSparseTerms(dtm_bi,0.2)
+dtm_tri_sp <- removeSparseTerms(dtm_tri,0.2)
+dtm_quad_sp <- removeSparseTerms(dtm_quad,0.2)
+
+## Popular words
+generate_popular_terms_df <- function(dtm, terms) {
+    popular_terms <- colSums(as.matrix(dtm))
+    popular_terms <- data.frame(word=names(popular_terms), freq=popular_terms)
+    head(popular_terms[order(popular_terms$freq, decreasing = T), ],terms)    
+}
+
+## Popular terms for ngrams
+popular_terms_uni <- generate_popular_terms_df(dtm_uni_sp, 60)
+popular_terms_bi <- generate_popular_terms_df(dtm_bi_sp, 60)
+

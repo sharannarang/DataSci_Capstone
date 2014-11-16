@@ -14,18 +14,25 @@ In order to explore the dataset, we start by reading in the data and constructin
 library(tm)
 library(RWeka)
 library(ggplot2)
+library(gridExtra)
 ```
 
-```{r read data, cache=TRUE}
-blogs <- readLines("en_US.blogs.txt", encoding = 'UTF-8')
-twitter <- readLines("en_US.twitter.txt", encoding = 'UTF-8')
-news <- readLines("en_US.news.txt", encoding = 'UTF-8')
+```{r read data, cache=TRUE, echo=FALSE}
+blogs <- readLines("en_US.blogs.txt")
+twitter <- readLines("en_US.twitter.txt")
+news <- readLines("en_US.news.txt")
 ```
 
-```{r exploratory analysis, echo=TRUE, warning=FALSE}
+```{r exploratory analysis, echo=FALSE, warning=FALSE}
 chars.blogs <- nchar(blogs)
 chars.twitter <- nchar(twitter)
 chars.news <- nchar(news)
+
+length.blogs <- length(blogs)
+length.twitter <- length(twitter)
+length.news <- length(news)
+
+data.frame(DataSet=c("Blogs", "Twitter", "News"), Size=c(object.size(blogs), object.size(twitter), object.size(news)), Number.of.Entries=c(length.blogs, length.twitter, length.news))
 
 par(mfrow = c(1,3))
 boxplot(chars.blogs, col="green", log="y")
@@ -36,71 +43,111 @@ boxplot(chars.twitter, col="red")
 title(main="Tweets", ylab="Length of entries")
 ```
 
-```{r unique words, eval=FALSE}
-blogs <- clean_up(blogs)
-blogs.words <- unique(unlist(strsplit(blogs, " ")))
-twitter <- clean_up(twitter)
-twitter.words <- unique(unlist(strsplit(twitter, " ")))
-news <- clean_up(blogs)
-news.words <- unique(unlist(strsplit(news, " ")))
 
-unique.words <- unique(c(blogs.words, twitter.words, news.words))
+## Cleaning the dataset
+After loading the dataset, it is noticible that the data has a lot of bad charaters. Here are the steps taken to clean the dataset:
 
+* Replace different types of apostrophes with the simple apostrophe
+* Remove punctuation
+* Remove numbers
+* Remove '\\032' character that is not decoded correctly
+* Reomve some other unicode characters which map to apostrophes and quotes
+* Remove any whitespace
+* Convert all characters to lowercase
+
+The code for the cleaning function is present in the appendix.
+
+#### Open Questions
+After performing the transformation, the datasets look clean. However, there are still some pending questions:
+
+* Should the words be stemmed? 
+* Is it good to remove all apostrophes? E.g Removing the apostrophe in Andy's might leave us with Anyds. 
+* Should we remove all stopwords from the dataset? 
+
+We will consider these questions as the machine learning algorithm is developed to imporove the accuracy of the predictions. 
+
+#### Profanity filtering
+One of the requirements of the project was to remove profanities from the datasets. There are several profanity lists available which could be used to filter all profanities. However, in a languague modelling task, removing the profanity may leave us with an incomplete sentance which would not be helpful in prediction. Therefore, we have decided to leave the profanities in the modelling task. One of the three approaches will be used to mask profanities from the resutls:
+
+1. Ignore results with profanities
+2. Replace profanity with another word of similar meaning
+3. Display <EXPLETIVE> instead of the profanity in the results
+
+## Unique words in the dataset
+Using the cleaning approach described above, each dataset is cleaned and then split into seperate words. With the help of the unique function, we compute the unique words for each of the datasets and the combined dataset. 
+
+```{r unique words, echo=FALSE}
+load("words.RData")
+unique.words <- unique(c(blogs_words, twitter_words, news_words))
+data.frame(Dataset=c("Blogs", "News", "Twitter", "Combined"), UniqueWords = c(length(blogs_words), length(news_words), length(twitter_words), length(unique.words)))
 ```
 
-## Random Sampling
-
-```{r sample funciton, echo=TRUE, eval=FALSE}
-create_sample <- function (input_file, output_file, lines) {
-  con1 <- file(input_file, 'r')
-  con2 <- file(output_file, "w")
-  sample <- readLines(con1, 1)
-  for (i in 2:lines) {
-    if (rbinom(1,1,0.2)) {
-      sample <- c(sample,readLines(con=con1,n=1, encoding="UTF-8"))
-    }
-    else {
-      gbg <- readLines(con1, 1)
-    }
-  }
-  close(con1)
-  
-  writeLines(sample,con2)
-  close(con2)    
-  sample
-}
-
-## Pick random texts from the files
-blogs <- create_sample("en_US.blogs.txt", "sample/blogs.txt", 899288)
-news <- create_sample("en_US.news.txt", "sample/news.txt", 77259)
-tweets <- create_sample("en_US.twitter.txt", "sample/twitter.txt",2360148)
-```
-
+There are approximately `r length(unique.words)` words with all the datasets combined.
 
 ## Developing the Corpus
 
-```{r create corpus, echo=TRUE, cache=TRUE, eval=FALSE}
+#### Random Sampling
+Storing `r length(unique.words)` words in the memory would be very expensive. In addition, it would be very time consuming and computationally expensive to to generate tokens for the entire dataset. Therefore, we have sampled each of the datsets to retain 20% of the original data. The sampling function is present in the Appendix. The sampled dataset is cleaned and written back to the disk.
+
+The corpus is created by reading the cleaned and sampled dataset from the disk. 
+
+```{r create corpus, echo=TRUE, eval=FALSE}
 ## Create the corpus
 en.cor <- VCorpus(DirSource("clean_sample/"))
 ```
 
-```{r clean the corpus, echo=TRUE, cache=TRUE, eval=FALSE}
-en.cor<- tm_map(en.cor, tolower)
-en.cor<- tm_map(en.cor, removeNumbers)
-en.cor<- tm_map(en.cor, removePunctuation)
-en.cor <- tm_map(en.cor, removeWords, stopwords("english"))
-en.cor <- tm_map(en.cor, stripWhitespace)
-en.cor <- tm_map(en.cor, PlainTextDocument)
-```
-
 ## Tokenization
 
-```{r Tokenization, echo=TRUE, cache=TRUE, message=FALSE}
-TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
-BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+Document Term Matrices are computed for 1-gram, 2-gram, 3-gram and 4-gram matrices. The computation is done using RWeka and tm packages. Using the document term matrices, histograms are plotted to depict the counts of the ngrams. Logscale is used since there are a large number of words that show up only a few times in the dataset. 
+
+```{r load freqs, echo=FALSE}
+load("Freqs.RData")
 ```
 
-```{r load data, echo=FALSE}
-load(".RData")
-dtm_tri
+```{r create hist, echo=FALSE}
+
 ```
+
+
+From the 1-gram matrix, we see that there are `r length(freq_uni)` unique terms in the corpus. This reprsents about `r round(length(freq_uni)/length(unique.words),5) * 100`% of the entire dataset. 
+
+```{r load sparse matrices, echo=FALSE}
+```
+
+```{r plot top ngrams, echo=FALSE}
+```
+
+
+## Apendix
+
+#### Sampling Function
+```{r sample funciton, echo=TRUE, eval=FALSE}
+create_sample <- function(src, out, lines) {
+    text <- readLines(src, lines)
+    sub<- rbinom(lines, 1, 0.2)
+    out.txt <- text[sub==1]
+    writeLines(out.txt, out)
+    out.txt
+}
+
+blogs <- create_sample("en_US.blogs.txt", "sample/blogs.txt", length(blogs))
+news <- create_sample("en_US.news.txt", "sample/news.txt", length(news))
+tweets <- create_sample("en_US.twitter.txt", "sample/twitter.txt",length(twitter))
+```
+
+#### Cleaning function
+```{r cleaning funciton, echo=TRUE, eval=FALSE}
+clean_up <- function(text) {
+    clean.text <- gsub("\u2092", "'", text)
+    clean.text <- gsub("\u2019", "'", clean.text)
+    clean.text <- removePunctuation(clean.text)
+    clean.text <- removeNumbers(clean.text)
+    clean.text <- removePunctuation(gsub("\032", "", clean.text))
+    clean.text <- gsub("\u0093|\u0092|\u0094", "", clean.text)
+    clean.text <- stripWhitespace(clean.text)
+    clean.text <- tolower(clean.text)
+    clean.text
+}
+```
+
+#### Tokenization function
