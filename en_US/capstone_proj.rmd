@@ -15,6 +15,7 @@ library(tm)
 library(RWeka)
 library(ggplot2)
 library(gridExtra)
+source("helper.R")
 ```
 
 ```{r read data, cache=TRUE, echo=FALSE}
@@ -91,11 +92,6 @@ Storing `r length(unique.words)` words in the memory would be very expensive. In
 
 The corpus is created by reading the cleaned and sampled dataset from the disk. 
 
-```{r create corpus, echo=TRUE, eval=FALSE}
-## Create the corpus
-en.cor <- VCorpus(DirSource("clean_sample/"))
-```
-
 ## Tokenization
 
 Document Term Matrices are computed for 1-gram, 2-gram, 3-gram and 4-gram matrices. The computation is done using RWeka and tm packages. Using the document term matrices, histograms are plotted to depict the counts of the ngrams. Logscale is used since there are a large number of words that show up only a few times in the dataset. 
@@ -104,19 +100,36 @@ Document Term Matrices are computed for 1-gram, 2-gram, 3-gram and 4-gram matric
 load("Freqs.RData")
 ```
 
-```{r create hist, echo=FALSE}
-
+```{r create hist, cache=TRUE, echo=FALSE}
+g1 <- plot_ngram_histogram(freq_uni,"1-gram counts")
+g2 <- plot_ngram_historgram(freq_bi, "2-gram counts")
+grid.arrange(g1,g2,nrow=2)
 ```
 
 
 From the 1-gram matrix, we see that there are `r length(freq_uni)` unique terms in the corpus. This reprsents about `r round(length(freq_uni)/length(unique.words),5) * 100`% of the entire dataset. 
 
-```{r load sparse matrices, echo=FALSE}
+Using the matrices, we have computed the top 20 n-gram terms. The plots for each of the n-grams are shown below.
+
+
+```{r plot top ngrams, cache=TRUE, echo=FALSE}
+load("popular_terms_data.RData")
+
+plot_popular_terms(popular_terms_uni, 20)
+plot_popular_terms(popular_terms_bi, 20)
+plot_popular_terms(popular_terms_tri, 20)
+plot_popular_terms(popular_terms_quad, 20)
 ```
 
-```{r plot top ngrams, echo=FALSE}
+From the 1-gram plot, it is evident that a lot of the words are stop words. In the plot below, we have eliminated all the stopwords and plot the top 15 non stop words.
+
+```{r plot 1gram ns, echo=FALSE}
+plot_popular_terms(popular_terms_uni_ns, 15)
 ```
 
+## Modeling
+
+N-grams will be used to develop the language model. From the Document Term Matrices, it is possible to create probability of the occurance of each n-gram. These probabilities can be used to predict the next word following an n-gram. 
 
 ## Apendix
 
