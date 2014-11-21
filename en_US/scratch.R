@@ -38,12 +38,15 @@ en.cor <- tm_map(en.cor, PlainTextDocument)
 TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
 BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
 QuadgramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 4, max = 4))
+PentagramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 5, max = 5))
 
 ## Create 1,2,3 gram tokens
 dtm_uni <- DocumentTermMatrix(en.cor)
 dtm_bi <- DocumentTermMatrix(en.cor, control = list(tokenize= BigramTokenizer))
 dtm_tri <- DocumentTermMatrix(en.cor, control = list(tokenize= TrigramTokenizer))
 dtm_quad <- DocumentTermMatrix(en.cor, control = list(tokenize= QuadgramTokenizer))
+dtm_quad <- DocumentTermMatrix(en.cor, control = list(tokenize= PentagramTokenizer))
+
 
 ## Generate Frequencies
 freq_uni <- colSums(as.matrix(dtm_uni))

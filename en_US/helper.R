@@ -21,7 +21,7 @@ clean_up <- function(text) {
 }
 
 plot_ngram_histogram <- function(freq, title){
-    g <- ggplot(data = data.frame(n.grams=names(freq), count=log2(freq)), aes(x=count)) + geom_histogram(color="black", fill="darkblue2") + ggtitle(title)
+    g <- ggplot(data = data.frame(n.grams=names(freq), count=log2(freq)), aes(x=count)) + geom_histogram(color="black", fill="darkblue") + ggtitle(title)
     g
 }
 
@@ -33,7 +33,7 @@ generate_popular_terms_df <- function(dtm, terms) {
 }
 
 ## Generate plot
-plot_popular_terms <- function(wc, terms, fill_color="darkblue") {
+plot_popular_terms <- function(wc, terms, title, fill_color="darkblue") {
     ggplot(data=head(wc, terms), aes(n.grams,freq)) + geom_bar(stat="identity", color="black", fill=fill_color) + 
-        theme(axis.text.x=element_text(angle=45, hjust=1))    
+        theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle(title)
 }
