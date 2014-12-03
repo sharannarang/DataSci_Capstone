@@ -39,13 +39,14 @@ TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3)
 BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
 QuadgramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 4, max = 4))
 PentagramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 5, max = 5))
+UnigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 1))
 
 ## Create 1,2,3 gram tokens
-dtm_uni <- DocumentTermMatrix(en.cor)
-dtm_bi <- DocumentTermMatrix(en.cor, control = list(tokenize= BigramTokenizer))
-dtm_tri <- DocumentTermMatrix(en.cor, control = list(tokenize= TrigramTokenizer))
+dtm_uni <- DocumentTermMatrix(en.cor, control = list(wordLengths=c(0,Inf), removeStopWords=FALSE, language="english"))
+dtm_bi <- DocumentTermMatrix(en.cor, control = list(tokenize= BigramTokenizer, removeStopWords=FALSE))
+dtm_tri <- DocumentTermMatrix(en.cor, control = list(tokenize= TrigramTokenizer, removeStopWords=FALSE))
 dtm_quad <- DocumentTermMatrix(en.cor, control = list(tokenize= QuadgramTokenizer))
-dtm_quad <- DocumentTermMatrix(en.cor, control = list(tokenize= PentagramTokenizer))
+dtm_penta <- DocumentTermMatrix(en.cor, control = list(tokenize= PentagramTokenizer))
 
 
 ## Generate Frequencies
@@ -68,5 +69,49 @@ popular_terms_quad <- generate_popular_terms_df(dtm_quad, 30)
 stop.words <- popular_terms_uni$n.grams %in% stopwords("en")
 popular_terms_uni_ns <- popular_terms_uni[stop.words==FALSE,]
 
+
+
+#### Cleaning up frequency tables.
+### Unigram
+## Ignore lower 575 terms since they are all useless  
+freq_uni <- freq_uni[-(1:575)]
+
+### Bigram: Keeping all values of Bigram for now. It may be possible to reduce this.
+
+### Trigram: Remove all terms which occur only once.
+freq_tri.1 <- subset(freq_tri, freq_tri>1)
+
+### Quadgram: Remove all terms which occur only once. Reduces mem space by a factor of 14
+freq_quad.1 <- subset(freq_quad, freq_quad > 1)
+
+### Quadgram: Remove all terms which occur only once. Reduces mem space by a factor of 20
+freq_penta.1 <- subset(freq_penta, freq_penta > 1)
+
+### Alternate form of generating unigram DTM and retaining stopwors
+news.clean <- readLines("clean_sample_2/news.txt")
+twitter.clean <- readLines("clean_sample_2/twitter.txt")
+blogs.clean <- readLines("clean_sample_2/blogs.txt")
+clean.text <- c(news.clean,blogs.clean, twitter.clean)
+clean.text.split <- strsplit(clean.text, " ")
+freq_1g.str <- table(unlist(clean.text.split))
+
+## Calculating probabilites without smoothing
+### 1G probabilites
+sum_1g <- sum(freq_1g)
+prob_1g <- freq_1g/sum_1g
+
+### 2G probablities
+bi_grams <- strsplit(names(freq_bi), " ")
+
+
+### Grepping in data frames
+test <- (grepl("^a$",freqdf_penta$Term.1) & grepl("^a$", freqdf_penta$Term.2))
+freqdf_penta[test, ]
+
+
+### Some takeways
+## Removing stop words helps sometimes. It improves the likelyhood of seeing likely things i.e live die, time take picture vs time take look
+## Stemming can also be helpful with some better stemming model which makes pictures picture so it can recognize plurals
+## stopwords removal using the removewords function is bad. It removes I from "I'd" instead of removing the entire word. Just improving that would help prediction.
 
 

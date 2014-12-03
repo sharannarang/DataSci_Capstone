@@ -73,3 +73,91 @@ plot_popular_terms <- function(wc, terms, title, fill_color="darkblue") {
     ggplot(data=head(wc, terms), aes(n.grams,freq)) + geom_bar(stat="identity", color="black", fill=fill_color) + 
         theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle(title)
 }
+
+create_freq_table <- function(dtm) {
+    freq <- colSums(as.matrix(dtm))
+    freq <- freq[order(freq)]
+    freq
+}
+
+create_words_data_frame <- function(counts) {
+     words.list <- strsplit(names(counts), " ")
+     df <- data.frame(matrix(unlist(words.list), nrow = length(counts), byrow = T))
+     for (i in 1:ncol(df)) {
+         colnames(df)[i] <- paste("Term", i, sep=".")
+         df[,i] <- as.character(df[,i])
+     }     
+     df <- cbind(df, counts, row.names=NULL)
+     colnames(df)[ncol(df)] <- "Count"
+     df
+  
+}
+
+get_3gram_count <- function(text) {
+    search_string <- c(paste("^",text[1], "$", sep=""), paste("^", text[2], "$", sep=""), paste("^", text[3], "$", sep=""))
+    gram <- tail(freqdf_tri[grepl(search_string[1], freqdf_tri$Term.1) & grepl(search_string[2], freqdf_tri$Term.2) & grepl(search_string[3], freqdf_tri$Term.3), ],1)
+    gram$Count
+}
+
+get_4gram_count <- function(text) {
+  search_string <- c(paste("^",text[1], "$", sep=""), paste("^", text[2], "$", sep=""), paste("^", text[3], "$", sep=""), paste("^", text[4], "$", sep=""))
+  gram <- tail(freqdf_quad[grepl(search_string[1], freqdf_quad$Term.1) & grepl(search_string[2], freqdf_quad$Term.2) & grepl(search_string[3], freqdf_quad$Term.3) & grepl(search_string[4], freqdf_quad$Term.4), ],1)
+  gram$Count
+}
+
+search_3gram_freq_df <- function(text) {
+    search_string <- c(paste("^",text[1], "$", sep=""), paste("^", text[2], "$", sep=""))
+    tail(freqdf_tri[grepl(search_string[1], freqdf_tri$Term.1) & grepl(search_string[2], freqdf_tri$Term.2), ],5)
+}
+
+search_4gram_freq_df <- function(text) {
+    search_string <- c(paste("^",text[1], "$", sep=""), paste("^", text[2], "$", sep=""), paste("^", text[3], "$", sep=""))
+    tail(freqdf_quad[grepl(search_string[1], freqdf_quad$Term.1) & grepl(search_string[2], freqdf_quad$Term.2) & grepl(search_string[3], freqdf_quad$Term.3), ],5)
+}
+
+search_5gram_freq_df <- function(text) {
+    search_string <- c(paste("^",text[1], "$", sep=""), 
+                       paste("^", text[2], "$", sep=""), 
+                       paste("^", text[3], "$", sep=""),
+                       paste("^", text[4], "$", sep="")                       
+                       )
+    tail(freqdf_penta[grepl(search_string[1], freqdf_penta$Term.1) & 
+                      grepl(search_string[2], freqdf_penta$Term.2) & 
+                      grepl(search_string[3], freqdf_penta$Term.3) &
+                      grepl(search_string[4], freqdf_penta$Term.4)   , ],5)
+}
+
+search_terms <- function(text_string) {
+    clean_text <- clean_up(text_string)
+    clean_words <- unlist(strsplit(clean_text, " "))
+    len <- length(clean_words)
+    ## Handle the case where the input doesn't have any text.
+    if (len >= 1) { ## Atleast 1 words in input
+       ##Implement 2 gram search
+    }
+    if (len >= 2) {
+        #search_3gram_freq_df(tail(clean_words,2))
+    }
+    if (len >= 3) {
+        quad_hits <- search_4gram_freq_df(tail(clean_words,3))
+        if (nrow(quad_hits)) {
+            tri_count <- get_3gram_count(tail(clean_words,3))          
+            quad_hits$Prob <- 0.4 * (quad_hits$Count/tri_count)
+            quad_hits <- quad_hits[,c(4,6)]
+            colnames(quad_hits) <- c("Pred", "Prob")
+        }
+    }
+    if (len >= 4) {
+      penta_hits <- search_5gram_freq_df(tail(clean_words,4))
+      if (nrow(penta_hits)) {
+        quad_count <- get_4gram_count(tail(clean_words,4))          
+        penta_hits$Prob <- penta_hits$Count/quad_count
+        penta_hits <- penta_hits[,c(5,7)]
+        colnames(penta_hits) <- c("Pred", "Prob")
+      }       
+    }
+    if (len >= 4)
+       rbind(quad_hits,penta_hits, row.names=NULL)
+    else
+      quad_hits
+}
