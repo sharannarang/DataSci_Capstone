@@ -112,7 +112,7 @@ search_3gram_freq_df <- function(text) {
 
 search_4gram_freq_df <- function(text) {
     search_string <- c(paste("^",text[1], "$", sep=""), paste("^", text[2], "$", sep=""), paste("^", text[3], "$", sep=""))
-    tail(freqdf_quad[grepl(search_string[1], freqdf_quad$Term.1) & grepl(search_string[2], freqdf_quad$Term.2) & grepl(search_string[3], freqdf_quad$Term.3), ],5)
+    tail(freqdf[[4]][grepl(search_string[1], freqdf_quad$Term.1) & grepl(search_string[2], freqdf_quad$Term.2) & grepl(search_string[3], freqdf_quad$Term.3), ],5)
 }
 
 search_5gram_freq_df <- function(text) {
@@ -127,37 +127,111 @@ search_5gram_freq_df <- function(text) {
                       grepl(search_string[4], freqdf_penta$Term.4)   , ],5)
 }
 
+split_search_string <- function(text, len) {
+    search_string <- paste("^",text[1], "$", sep="")
+    if (len != 1) {
+        for (i in seq(2, len)) {
+            search_string <- c(search_string, paste("^",text[i], "$", sep=""))  
+        }  
+    }
+    search_string
+}
+
+get_predictions <- function(words, len) {
+    res <- search_freq_df(words, len, len+1, 5)
+    print(res)
+    res
+}
+
+get_count <- function(words, len) {
+    res <- search_freq_df(words, len, len, 1)
+    res$Count
+}
+
+search_freq_df <- function(words, len, gram, num_results) {
+    for (i in seq(1, len)) {
+        if (i == 1) {
+            result <- grepl(words[i], freqdf[[gram]][,i])  
+            
+        }
+        else {
+            result <- result & grepl(words[i], freqdf[[gram]][,i])
+        }        
+    }
+    
+    tail(freqdf[[gram]][result, ], num_results)
+}
+
 search_terms <- function(text_string) {
     clean_text <- clean_up(text_string)
     clean_words <- unlist(strsplit(clean_text, " "))
     len <- length(clean_words)
-    ## Handle the case where the input doesn't have any text.
-    if (len >= 1) { ## Atleast 1 words in input
-       ##Implement 2 gram search
-    }
-    if (len >= 2) {
-        #search_3gram_freq_df(tail(clean_words,2))
-    }
-    if (len >= 3) {
-        quad_hits <- search_4gram_freq_df(tail(clean_words,3))
-        if (nrow(quad_hits)) {
-            tri_count <- get_3gram_count(tail(clean_words,3))          
-            quad_hits$Prob <- 0.4 * (quad_hits$Count/tri_count)
-            quad_hits <- quad_hits[,c(4,6)]
-            colnames(quad_hits) <- c("Pred", "Prob")
+    
+    ## Still need to handle the case where the input doesn't have any text.
+    mult <- 0    
+    for (i in seq(4,1)) {
+        if (len >= i) {
+            search_words <- split_search_string(tail(clean_words,i), i)
+            hits <- get_predictions(search_words, i)
+            if (nrow(hits)) {
+                low_gram_count <- get_count(search_words, i)
+                prob_mult <- ifelse(mult==0, 1, (0.4**mult))
+                hits$Prob <- prob_mult * hits$Count/low_gram_count 
+                hits <- hits[, c(i+1, i+3)]
+                colnames(hits) <- c("Pred", "Prob")
+                print(hits)
+                print(exists("hits_df"))
+                if (exists("hits_df")) {
+                    hits_df <- rbind(hits_df, hits, row.names=NULL)
+                }
+                else {
+                    hits_df <- hits
+                }
+            }
+          
         }
+        mult <- mult + 1
     }
-    if (len >= 4) {
-      penta_hits <- search_5gram_freq_df(tail(clean_words,4))
-      if (nrow(penta_hits)) {
-        quad_count <- get_4gram_count(tail(clean_words,4))          
-        penta_hits$Prob <- penta_hits$Count/quad_count
-        penta_hits <- penta_hits[,c(5,7)]
-        colnames(penta_hits) <- c("Pred", "Prob")
-      }       
-    }
-    if (len >= 4)
-       rbind(quad_hits,penta_hits, row.names=NULL)
-    else
-      quad_hits
+    hits_df <- dcast(melt(hits_df, id.vars = c("Pred")), Pred ~ ., sum)
+    colnames(hits_df) <- c("Pred", "Prob")
+    hits_df <- hits_df[order(hits_df$Prob, decreasing = T), ]
+    head(hits_df,5)
+
 }
+
+#     if (len >= 1) { ## Atleast 1 words in input
+#        ##Implement 2 gram search
+#     }
+#     if (len >= 2) {
+#         #search_3gram_freq_df(tail(clean_words,2))
+#     }
+#     if (len >= 3) {
+#         search_words <- split_search_string(tail(clean_words,3), 3)
+#         quad_hits <- get_predictions(search_words, 3)
+#         if (nrow(quad_hits)) {
+#             tri_count <- get_count(search_words, 3)
+#             quad_hits$Prob <- 0.4 * (quad_hits$Count/tri_count)
+#             quad_hits <- quad_hits[,c(4,6)]
+#             colnames(quad_hits) <- c("Pred", "Prob")
+#         }
+# #         quad_hits <- search_4gram_freq_df(tail(clean_words,3))
+# #         if (nrow(quad_hits)) {
+# #             tri_count <- get_3gram_count(tail(clean_words,3))          
+# #             quad_hits$Prob <- 0.4 * (quad_hits$Count/tri_count)
+# #             quad_hits <- quad_hits[,c(4,6)]
+# #             colnames(quad_hits) <- c("Pred", "Prob")
+# #         }
+#     }
+#     if (len >= 4) {
+#       penta_hits <- search_5gram_freq_df(tail(clean_words,4))
+#       if (nrow(penta_hits)) {
+#         quad_count <- get_4gram_count(tail(clean_words,4))          
+#         penta_hits$Prob <- penta_hits$Count/quad_count
+#         penta_hits <- penta_hits[,c(5,7)]
+#         colnames(penta_hits) <- c("Pred", "Prob")
+#       }       
+#     }
+#     if (len >= 4)
+#        rbind(quad_hits,penta_hits, row.names=NULL)
+#     else
+#       quad_hits
