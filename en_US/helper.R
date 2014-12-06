@@ -163,7 +163,11 @@ search_freq_df <- function(words, len, gram, num_results) {
 }
 
 search_terms <- function(text_string) {
+  
+    ## Clean up the input string.
     clean_text <- clean_up(text_string)
+    
+    ## Split the input string into words and create a vector. 
     clean_words <- unlist(strsplit(clean_text, " "))
     len <- length(clean_words)
     
@@ -171,16 +175,26 @@ search_terms <- function(text_string) {
     mult <- 0    
     for (i in seq(4,1)) {
         if (len >= i) {
+            ##  Picks last i terms
             search_words <- split_search_string(tail(clean_words,i), i)
+            
+            ## Find i grams in table
             hits <- get_predictions(search_words, i)
             if (nrow(hits)) {
+                ## if found, then search for the occurance of the base i-gram
                 low_gram_count <- get_count(search_words, i)
+                
+                ## Calculate prob of prediction by dividing by base i-gram count and multiplying by back-off factor. 
+                ## backoff factor 1 > 5g, 0.4 -> 4g, 0.16 -> 3g
                 prob_mult <- ifelse(mult==0, 1, (0.4**mult))
-                hits$Prob <- prob_mult * hits$Count/low_gram_count 
+                hits$Prob <- prob_mult * hits$Count/low_gram_count
+                
+                ## remove un-necessary columns from the data
                 hits <- hits[, c(i+1, i+3)]
                 colnames(hits) <- c("Pred", "Prob")
                 print(hits)
-                print(exists("hits_df"))
+                
+                ## Add hits to df
                 if (exists("hits_df")) {
                     hits_df <- rbind(hits_df, hits, row.names=NULL)
                 }
@@ -192,10 +206,13 @@ search_terms <- function(text_string) {
         }
         mult <- mult + 1
     }
+    
+    ## Need to handle the case where no hits are found. 
+    
     hits_df <- dcast(melt(hits_df, id.vars = c("Pred")), Pred ~ ., sum)
     colnames(hits_df) <- c("Pred", "Prob")
     hits_df <- hits_df[order(hits_df$Prob, decreasing = T), ]
-    head(hits_df,5)
+    as.character(head(hits_df$Pred,5))
 
 }
 
