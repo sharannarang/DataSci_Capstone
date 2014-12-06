@@ -22,7 +22,7 @@ clean_up <- function(text) {
     clean.text <- gsub("\032", "", clean.text)
     
     ## Remove anything that's not alphabetical or ' or / or -
-    clean.text <- gsub("[^[:alpha:][:space:]'/-]", " ", clean.text)
+    clean.text <- gsub("[^[:alpha:][:space:]']", " ", clean.text)
     
     ## Convert to lowercase
     clean.text <- tolower(clean.text)
@@ -31,8 +31,8 @@ clean_up <- function(text) {
     clean.text <- gsub("/", " ", clean.text)
     
     ## Remove quoted text
-    clean.text <- gsub(" \'|\' ", " ", clean.text)
-    clean.text <- gsub("^\'|\'$", "", clean.text)
+    clean.text <- gsub(" \'+|\'+ ", " ", clean.text)
+    clean.text <- gsub("^\'+|\'+$", "", clean.text)
     clean.text
     
     ## Replace it's with it is since it is very common
@@ -45,8 +45,8 @@ clean_up <- function(text) {
     clean.text
     
     ## Remove ' - ' from data.
-    clean.text <- gsub(" -+ | -+|-+ ", " ", clean.text)
-    clean.text <- gsub("^-+|-+$", "", clean.text)
+    ## clean.text <- gsub(" -+ | -+|-+ ", " ", clean.text)
+    ## clean.text <- gsub("^-+|-+$", "", clean.text)
 
     
     ## Remove whitespace
