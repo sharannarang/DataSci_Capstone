@@ -14,7 +14,7 @@ create_search_strings <- function(text, len) {
 ## Find predictions for n-gram in n+1 gram count table
 get_predictions <- function(words, len) {
   res <- search_freq_df(words, len, len+1, 5)
-  print(res)
+  #print(res)
   res
 }
 
@@ -40,13 +40,19 @@ search_freq_df <- function(words, len, gram, num_results) {
 }
 
 ## Prediction function
-predict_next_word <- function(text_string) {
+predict_next_word <- function(text_string, clean_text=1, num_preds=5) {
   
-  ## Clean up the input string.
-  clean_text <- clean_up(text_string)
-  
-  ## Split the input string into words and create a vector. 
-  clean_words <- unlist(strsplit(clean_text, " "))
+  if (clean_text) {
+    ## Clean up the input string.
+    clean_text <- clean_up(text_string)
+    
+    ## Split the input string into words and create a vector. 
+    clean_words <- unlist(strsplit(clean_text, " "))    
+  }
+  else {
+    clean_words <- text_string
+  }
+
   len <- length(clean_words)
   
   ## Still need to handle the case where the input doesn't have any text.
@@ -70,7 +76,7 @@ predict_next_word <- function(text_string) {
         ## remove un-necessary columns from the data
         hits <- hits[, c(i+1, i+3)]
         colnames(hits) <- c("Pred", "Prob")
-        print(hits)
+        #print(hits)
         
         ## Add hits to df
         if (exists("hits_df")) {
@@ -87,9 +93,15 @@ predict_next_word <- function(text_string) {
   
   ## Need to handle the case where no hits are found. 
   
-  hits_df <- dcast(melt(hits_df, id.vars = c("Pred")), Pred ~ ., sum)
-  colnames(hits_df) <- c("Pred", "Prob")
-  hits_df <- hits_df[order(hits_df$Prob, decreasing = T), ]
-  as.character(head(hits_df$Pred,5))
-  
+  if (exists("hits_df")) {
+    hits_df <- dcast(melt(hits_df, id.vars = c("Pred")), Pred ~ ., sum)
+    colnames(hits_df) <- c("Pred", "Prob")
+    hits_df <- hits_df[order(hits_df$Prob, decreasing = T), ]
+    as.character(head(hits_df$Pred, num_preds))  
+  }
+  else {
+    print("here")
+    as.character(tail(freqdf[[1]]$Term.1, num_preds))
+    
+  }
 }
