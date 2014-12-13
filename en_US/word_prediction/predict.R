@@ -40,7 +40,7 @@ search_freq_df <- function(words, len, gram, num_results) {
 }
 
 ## Prediction function
-predict_next_word <- function(text_string, clean_text=1, num_preds=5) {
+predict_next_word <- function(text_string, clean_text=1, num_preds=5, n_grams=4) {
   
   if (clean_text) {
     ## Clean up the input string.
@@ -57,7 +57,7 @@ predict_next_word <- function(text_string, clean_text=1, num_preds=5) {
   
   ## Still need to handle the case where the input doesn't have any text.
   mult <- 0    
-  for (i in seq(4,1)) {
+  for (i in seq(n_grams,1)) {
     if (len >= i) {
       ##  Picks last i terms
       search_words <- create_search_strings(tail(clean_words,i), i)
@@ -97,7 +97,7 @@ predict_next_word <- function(text_string, clean_text=1, num_preds=5) {
     hits_df <- dcast(melt(hits_df, id.vars = c("Pred")), Pred ~ ., sum)
     colnames(hits_df) <- c("Pred", "Prob")
     hits_df <- hits_df[order(hits_df$Prob, decreasing = T), ]
-    as.character(head(hits_df$Pred, num_preds))  
+    head(hits_df, num_preds)  
   }
   else {
     print("here")
