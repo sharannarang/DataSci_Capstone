@@ -1,0 +1,54 @@
+Word Prediction App using N-gram modeling
+========================================================
+author: Sharan Narang
+date: December, 12, 2014
+
+Coursera Data Science Specialization
+
+Introduction
+========================================================
+
+- The task of predicting the next word in a sentance is difficult task. There are several aspects that need to be taken into account such as accuracy, response time and memory size.
+- The predictive model is built using 20% of the english twitter, news and blogs datasets. These datasets are randomly sampled and cleaned to generate a corpus 
+- The corpus is split into n-grams and n-grams counts are generated.
+- In order to limit memory usage and improve response time, any n-grams occuring less than 5 times are not saved in the model. 
+
+Prediction Algorithm
+========================================================
+
+- Word prediction is achieved using a stupid back-off algorithm. 
+- The input text is cleaned and split into 1 grams. Upto the last four words are used in predicting the next word. 
+- The 5-gram counts are searched for the last four words of the input string. The matches alongwith the probabilities are saved.
+- Similar steps are performed on the 4,3,2 gram counts using the last 3,2,1 words of the input respectively. 
+- The probability of the lower gram models are scaled down by a backoff factor. 
+- Finally, the predictions with the highest probability are returned
+
+Model Accuracy
+========================================================
+
+The plot shows that accuracy decreases as model size reduces (indicated by minimum n-gram counts) and increases as more predictions are used to compute accuracy
+
+```{r, echo=FALSE, fig.width=15, fig.heigth=15}
+load("../CombinedStats_1.RData")
+library(ggplot2)
+ggplot(data=stats.df, aes(x=Accuracy, y=Num_of_preds, color=factor(Counts_Greater_than))) + geom_point(size=4) + labs(x="Accuracy", y="Number of Predictions", title="Accuracy") + scale_color_discrete(name="Mimimum N-gram counts") + theme(axis.title=element_text(size=14), legend.title=element_text(size=14), axis.text=element_text(face="bold"))
+```
+
+
+Application
+========================================================
+- The application can be accessed from the link: https://sharan.shinyapps.io/word_prediction/
+- In the simple prediction mode, the application predicts the next word using the input text
+- In the custom word prediction mode, the user has the control to vary prediction parameters and see how that impacts the prediction accuracy.
+- The application achieved a maximum accuracy of 30% on a test set from the news dataset with 5 predictions. 
+- Average accuracy ranges from 11% to 14% for single word prediction depending on model size.
+- The simple prediction app takes about 4 seconds to generate a prediction and draw a pie chart.
+
+Future Work
+========================================================
+Given my limited knowledge in the field of Language processing, this app can be improved by:
+- Using some smoothing technique to determine probablities. This would help in dealing with unkown words.
+- Improve the predictive model by intelligent removal of stop words and stemming.
+- In real life, a spell checker would be very important to get good predictions.
+- Explore more advanced techniques of natural language processing to improve accuracy.
+- Figure out how to extend this app to other languages

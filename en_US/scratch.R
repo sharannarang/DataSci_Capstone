@@ -36,7 +36,7 @@ en.cor <- tm_map(en.cor, PlainTextDocument)
 
 ## Tokenization
 TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
-BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+BigramTokenizer <- function(x) {RWeka::NGramTokenizer(x, RWeka::Weka_control(min = 2, max = 2))}
 QuadgramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 4, max = 4))
 PentagramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 5, max = 5))
 UnigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 1))
