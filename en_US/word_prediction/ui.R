@@ -1,6 +1,12 @@
 library(shiny)
 require(rCharts)
 
+
+## UI with three tabs
+## Tab 1: Simple page explaining the usage of application
+## Tab 2: Simple prediction mode
+## Tab 3: Custom prediction mode
+
 shinyUI(navbarPage("Word Prediction Application",
             tabPanel("Algorithm and Application Details",
                 h2("How to use the Application"),                   

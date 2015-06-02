@@ -72,8 +72,8 @@ predict_next_word <- function(text_string, clean_text=1, num_preds=5, n_grams=4,
       count_list_mod <- lapply(freqdf, FUN = function(x) x[x$Count>=min_n_gram_count,])
   }
   
-  ## Still need to handle the case where the input doesn't have any text.
   mult <- 0    
+  ## Find matches for n_grams with n starting from n_grams specified in the input to 1 gram.
   for (i in seq(n_grams,1)) {
     if (len >= i) {
       ##  Picks last i terms
@@ -118,11 +118,12 @@ predict_next_word <- function(text_string, clean_text=1, num_preds=5, n_grams=4,
     mult <- mult + 1
   }
   
-  ## Need to handle the case where no hits are found. 
   if (exists("hits_df")) {
     hits_df <- dcast(melt(hits_df, id.vars = c("Pred")), Pred ~ ., sum)
     colnames(hits_df) <- c("Pred", "Prob")
     hits_df <- hits_df[order(hits_df$Prob, decreasing = T), ]
+    
+    ## Cleanup profanities if user doesn't want to see any bad words.
     if (filter_profanity == T) {
         clean_hits <- hits_df$Pred %in% bad_words
         hits_df <- hits_df[!clean_hits,]        
@@ -130,7 +131,7 @@ predict_next_word <- function(text_string, clean_text=1, num_preds=5, n_grams=4,
     head(hits_df, num_preds)  
   }
   else {
-      
+    ## No matches. Return most frequent 1 grams.
     res<-tail(freqdf[[1]], num_preds)
     res$Prob <- res$Count/sum(freqdf[[1]]$Count)
     res <- res[,c("Term.1","Prob")]

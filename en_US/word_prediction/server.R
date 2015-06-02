@@ -10,11 +10,17 @@ attach("Counts_list.RData")
 attach("bad_words.RData")
 
 shinyServer(function(input, output) {
+    
+    ## Server side implementation for tab2 [Simple prediction]
     pred <- reactive(preddf <- predict_next_word(input$input1, min_n_gram_count = 6))
     profanity_filter <- reactive(as.character(input$filter_profanities) == 'On')
+    
+    ## Display top output.
     output$output1 <- renderText({
         paste(input$input1, pred()[1,1], sep=" ")
     })
+    
+    ## Display Pie-chart of top outputs
     output$top_preds <- renderChart({
         res <- pred()
 #         res$Prob <- res$Prob * 1000
@@ -24,10 +30,13 @@ shinyServer(function(input, output) {
         return(d1)        
     })
     
+    ## Prediction for input on tab2. 
     pred1 <- reactive(pred1_res <- predict_next_word(input$input2, 
                                                      min_n_gram_count = as.numeric(input$min_n_gram_counts), 
                                                      n_grams = as.numeric(input$n_gram),
                                                      filter_profanity= profanity_filter()))
+
+    ## Display predictions.
     output$output2 <- renderText({
         paste(input$input2, pred1()[1,1], sep=" ")
     })
